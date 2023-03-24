@@ -1,0 +1,113 @@
+library(tidyverse)
+library(riddle)
+library(janitor)
+
+
+# link to ridl resource ---------------------------------------------------
+
+country_name <- "Guatelama"
+raw_data_ridl <- 'https://ridl.unhcr.org/dataset/0af61192-1fc4-404e-96de-dfe0d9387983/resource/d0f36c97-0eb3-4df4-87e7-0253ce310f06/download/survey-csv-data__aqav4lhveawrqn9xq2xtqd_data.csv'                      
+
+
+# read data ---------------------------------------------------------------
+
+df_raw <- resource_fetch(raw_data_ridl) |> 
+  read.csv2() |> 
+  clean_names()
+
+
+# select core questions ---------------------------------------------------
+
+df_wrangle <- df_raw |> 
+  mutate(a_introduction_a003_date = ymd(a_introduction_a003_date)) |> 
+  select(start,                                                                                                           
+         end,                                                                                                             
+         today,
+         uuid = x_uuid,
+         gps_ubicacion = ubicacion_gps,                                                                                                 
+         gps_latitude = a_introduction_ubicacion_gps_latitude,                                                                            
+         gps_longitude = a_introduction_ubicacion_gps_longitude,                                                                           
+         gps_altitude = a_introduction_ubicacion_gps_altitude,                                                                            
+         gps_precision = a_introduction_ubicacion_gps_precision,  
+         A001_Organization_eng = a_introduction_a001_organization_eng,
+         A001_Organization_esp = a_introduction_a001_organization_esp,
+         A002_staff = a_introduction_a002_staff,
+         A003_date = a_introduction_a003_date,
+         A004_location = a_introduction_a004_location,
+         consent_text = a_introduction_consent_text,
+         A006_consent = a_introduction_a006_consent,
+         B001_sex = questionnaire_b_biodata_b001_sex,
+         B002_age = questionnaire_b_biodata_b002_age,
+         B004_nationality = questionnaire_b_biodata_b004_nationality,
+         B004_nationality_other = questionnaire_b_biodata_b004_nationality_other,
+         B004_nationality_stateless = questionnaire_b_biodata_b004_nationality_stateless,
+         B008_education = questionnaire_b_biodata_b008_education,
+         B010_documentation = questionnaire_b_biodata_b010_documentation,
+         B011_habitual_residence = questionnaire_b_biodata_b011_habitual_residence,
+         intention = questionnaire_b_biodata_intention,
+         B012_appliedprot = questionnaire_b_biodata_b012_appliedprot,
+         C004_reasons_to_leave_origin = questionnaire_reasoncoo_c004_reasons_to_leave_origin,
+         C001_when_left_coo = questionnaire_c_leaving_c001_when_left_coo,
+         C004_reasons_to_leave_habitual_residence = questionnaire_c_leaving_c004_reasons_to_leave_habitual_residence,
+         D001a_destination_country = questionnaire_d_destination_d001a_destination_country,
+         D002_intention_return_ven = questionnaire_d_destination_d004_why_return_ven,
+         D004_why_return_ven = questionnaire_d_destination_d004_why_return_ven,
+         D004_why_return_ven_other = questionnaire_d_destination_d004_why_return_ven_other,
+         D005_return_state_ven = questionnaire_d_destination_d005_return_state_ven,
+         E001_arrival_date = questionnaire_e_arrival_e001_arrival_date,
+         E002_transit_country_001 = questionnaire_e_arrival_e002_transit_country_001,
+         E003_arrival_how = questionnaire_e_arrival_e003_arrival_how,
+         I001_prot_inc_yn = questionnaire_i_protection_i001_prot_inc_yn,
+         I002_protinc_type = questionnaire_i_protection_group_mistreat_country_i002_protinc_type,
+         IB001_prot_inc_yn = questionnaire_i_protection_ib001_prot_inc_yn,
+         IB002_protinc_type = questionnaire_i_protection_group_mistreat_other_country_ib002_protinc_type,
+         journey_food = questionnaire_begin_needs_group_wfp_journey_food,
+         NMeals = questionnaire_begin_needs_group_wfp_n_meals,
+         PercFoodSec = questionnaire_begin_needs_group_wfp_perc_food_sec,
+         Acceswater = questionnaire_begin_needs_group_wfp_acceswater,
+         WorryRsnFirst = questionnaire_begin_needs_worry_rsn_first,
+         Mainneeds = questionnaire_begin_needs_mainneeds,
+         L001_Spec_needs = questionnaire_begin_needs_l001_spec_needs
+         )
+  
+
+# keep consent equal yes --------------------------------------------------
+
+df_wrangle <- df_wrangle |> 
+  filter(A006_consent == "yes")
+
+
+# add country -------------------------------------------------------------
+
+df_wrangle <- df_wrangle |> 
+  mutate(country = country_name)
+
+# write clean data to ridl ------------------------------------------------
+
+file_name <- paste0(tolower(country_name), '_mm_questionnaire_clean','.csv')
+
+write_csv(df_wrangle, paste0('df-wrangle/', file_name))
+
+p <- package_show(gsub("(.*dataset/)(.*)(/resource.*)", "\\2",raw_data_ridl))
+
+m <- resource_metadata(type = "data",
+                       url = file_name,
+                       upload = httr::upload_file(paste0('df-wrangle/', file_name)),
+                       name = paste0(country_name, ": Mixed movement questionnaire", " - ",month.name[month(today())], " ",year(today())),
+                       format = "csv",
+                       file_type = "microdata",
+                       visibility = "public", # "restricted"
+                       date_range_start = min(df_wrangle$today),
+                       date_range_end = max(df_wrangle$today), #end day of last month
+                       version = "0",
+                       process_status = "anonymized",
+                       identifiability = "anonymized_enclave"
+)
+
+r <- resource_update(gsub("(.*resource/)(.*)(/download.*)", "\\2",raw_data_ridl), m)
+
+
+
+
+
+
