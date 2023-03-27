@@ -3,16 +3,37 @@ library(riddle)
 library(janitor)
 
 
+resource_fetch <- function(url, 
+                           path = tempfile()) {
+  
+  ## Remove file if it exist..
+  if (file.exists(path)) file.remove(path)
+  
+  if(Sys.getenv("USE_UAT")==1)   {
+    httr::GET(url,
+              httr::add_headers("X-CKAN-API-Key" = Sys.getenv("RIDL_UAT_API_TOKEN")),
+              httr::write_disk(path)) 
+  }
+  else  {
+    httr::GET(url,
+              httr::add_headers("X-CKAN-API-Key" = Sys.getenv("RIDL_API_TOKEN")),
+              httr::write_disk(path))}
+  path
+}
+
+
+Sys.unsetenv("USE_UAT")
 # link to ridl resource ---------------------------------------------------
 
-country_name <- "Guatelama"
+country_name <- "Guatemala"
 raw_data_ridl <- 'https://ridl.unhcr.org/dataset/0af61192-1fc4-404e-96de-dfe0d9387983/resource/d0f36c97-0eb3-4df4-87e7-0253ce310f06/download/survey-csv-data__aqav4lhveawrqn9xq2xtqd_data.csv'                      
 
 
 # read data ---------------------------------------------------------------
 
+
 df_raw <- resource_fetch(raw_data_ridl) |> 
-  read.csv2() |> 
+  read_csv2() |> 
   clean_names()
 
 
@@ -23,7 +44,7 @@ df_wrangle <- df_raw |>
   select(start,                                                                                                           
          end,                                                                                                             
          today,
-         uuid = x_uuid,
+         uuid = uuid,
          gps_ubicacion = ubicacion_gps,                                                                                                 
          gps_latitude = a_introduction_ubicacion_gps_latitude,                                                                            
          gps_longitude = a_introduction_ubicacion_gps_longitude,                                                                           
@@ -82,32 +103,36 @@ df_wrangle <- df_wrangle |>
 df_wrangle <- df_wrangle |> 
   mutate(country = country_name)
 
+
+# write locally the clean data --------------------------------------------
+file_name <- paste0(tolower(country_name), '_mm_questionnaire_clean_', tolower(month.name[month(today())]), "_",year(today()),".csv")
+
+write_csv(df_wrangle, paste0('./data-wrangle/', file_name))
+
 # write clean data to ridl ------------------------------------------------
 
-file_name <- paste0(tolower(country_name), '_mm_questionnaire_clean','.csv')
 
-write_csv(df_wrangle, paste0('df-wrangle/', file_name))
+dataset_id <- gsub("(.*dataset/)(.*)(/resource.*)", "\\2",raw_data_ridl)
 
-p <- package_show(gsub("(.*dataset/)(.*)(/resource.*)", "\\2",raw_data_ridl))
 
-m <- resource_metadata(type = "data",
-                       url = file_name,
-                       upload = httr::upload_file(paste0('df-wrangle/', file_name)),
-                       name = paste0(country_name, ": Mixed movement questionnaire", " - ",month.name[month(today())], " ",year(today())),
-                       format = "csv",
-                       file_type = "microdata",
-                       visibility = "public", # "restricted"
-                       date_range_start = min(df_wrangle$today),
-                       date_range_end = max(df_wrangle$today), #end day of last month
-                       version = "0",
-                       process_status = "anonymized",
-                       identifiability = "anonymized_enclave"
+m <- resource_metadata(
+  type = "data",
+  url = file_name,
+  name = paste0(country_name, ": Mixed movement questionnaire", " - ",month.name[month(today())], " ",year(today())),
+  upload = httr::upload_file(paste0('data-wrangle/', file_name)),
+  format = "csv",
+  file_type = "microdata",
+  date_range_start = paste0(min(df_wrangle$today)),
+  date_range_end = paste0(max(df_wrangle$today)),
+  version = "1",
+  visibility = "public",
+  process_status = "raw",
+  identifiability = "anonymized_public"
 )
 
-r <- resource_update(gsub("(.*resource/)(.*)(/download.*)", "\\2",raw_data_ridl), m)
 
+r <- resource_create(package_id = dataset_id,
+                     res_metadata = m)
 
-
-
-
+r
 
