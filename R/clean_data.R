@@ -1,14 +1,23 @@
 library(tidyverse)
 library(riddle)
 library(janitor)
+library(rstudioapi)
 
 
 Sys.unsetenv("USE_UAT")
-# link to ridl resource ---------------------------------------------------
+# Set ridl resource ---------------------------------------------------
 
-country_name <- "Guatemala"
-raw_data_ridl <- 'https://ridl.unhcr.org/dataset/0af61192-1fc4-404e-96de-dfe0d9387983/resource/d0f36c97-0eb3-4df4-87e7-0253ce310f06/download/survey-csv-data__aqav4lhveawrqn9xq2xtqd_data.csv'                      
+rstudioapi::showDialog(title = "Set the parameters for ridl resource!",
+                       message = "You will now enter   <b>country_name</b> and the precise URL for the csv datain RIDL  <b>raw_data_ridl</b>" )
 
+#country_name <- rstudioapi::askForPassword(prompt = 'country_name ')
+country_name <- rstudioapi::showPrompt(  title = "country_name", message = "Enter Country name", default = "")
+# country_name <- "Country"
+
+#raw_data_ridl <- rstudioapi::askForPassword(prompt = 'raw_data_ridl')
+raw_data_ridl <- rstudioapi::showPrompt(  title = "raw_data_ridl", message = "Enter precise URL for the csv datain RIDL", default = "")
+#raw_data_ridl <- 'URL to your CSV file in RIDL'   
+ 
 
 # read data ---------------------------------------------------------------
 
@@ -99,7 +108,7 @@ dataset_id <- gsub("(.*dataset/)(.*)(/resource.*)", "\\2",raw_data_ridl)
 m <- resource_metadata(
   type = "data",
   url = file_name,
-  name = paste0(country_name, ": Mixed movement questionnaire - Clean Data", " - ",month.name[month(today())], " ",year(today())),
+  name = paste0(country_name, ": Mixed movement - Cleaned", " - ",month.name[month(today())], " ",year(today())),
   upload = httr::upload_file(paste0('data-wrangle/', file_name)),
   format = "csv",
   file_type = "microdata",
