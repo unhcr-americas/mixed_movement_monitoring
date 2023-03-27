@@ -3,25 +3,6 @@ library(riddle)
 library(janitor)
 
 
-resource_fetch <- function(url, 
-                           path = tempfile()) {
-  
-  ## Remove file if it exist..
-  if (file.exists(path)) file.remove(path)
-  
-  if(Sys.getenv("USE_UAT")==1)   {
-    httr::GET(url,
-              httr::add_headers("X-CKAN-API-Key" = Sys.getenv("RIDL_UAT_API_TOKEN")),
-              httr::write_disk(path)) 
-  }
-  else  {
-    httr::GET(url,
-              httr::add_headers("X-CKAN-API-Key" = Sys.getenv("RIDL_API_TOKEN")),
-              httr::write_disk(path))}
-  path
-}
-
-
 Sys.unsetenv("USE_UAT")
 # link to ridl resource ---------------------------------------------------
 
@@ -118,7 +99,7 @@ dataset_id <- gsub("(.*dataset/)(.*)(/resource.*)", "\\2",raw_data_ridl)
 m <- resource_metadata(
   type = "data",
   url = file_name,
-  name = paste0(country_name, ": Mixed movement questionnaire", " - ",month.name[month(today())], " ",year(today())),
+  name = paste0(country_name, ": Mixed movement questionnaire - Clean Data", " - ",month.name[month(today())], " ",year(today())),
   upload = httr::upload_file(paste0('data-wrangle/', file_name)),
   format = "csv",
   file_type = "microdata",
@@ -126,8 +107,8 @@ m <- resource_metadata(
   date_range_end = paste0(max(df_wrangle$today)),
   version = "1",
   visibility = "public",
-  process_status = "raw",
-  identifiability = "anonymized_public"
+  process_status = "cleaned",
+  identifiability = "anonymized_enclave"
 )
 
 
