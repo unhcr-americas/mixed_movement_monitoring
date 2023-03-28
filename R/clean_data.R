@@ -21,7 +21,6 @@ raw_data_ridl <- rstudioapi::showPrompt(  title = "raw_data_ridl", message = "En
 
 # read data ---------------------------------------------------------------
 
-
 df_raw <- resource_fetch(raw_data_ridl) |> 
   read_csv2() |> 
   clean_names()
@@ -88,6 +87,18 @@ df_wrangle <- df_wrangle |>
   filter(A006_consent == "yes")
 
 
+# remove unnecessary rows -------------------------------------------------
+
+df_wrangle <- df_wrangle |>
+  filter(!uuid %in% c("",
+                      "",
+                      "",
+                      "",
+                      "",
+                      "",
+                      ""))
+
+
 # add country -------------------------------------------------------------
 
 df_wrangle <- df_wrangle |> 
@@ -95,7 +106,7 @@ df_wrangle <- df_wrangle |>
 
 
 # write locally the clean data --------------------------------------------
-file_name <- paste0(tolower(country_name), '_mm_questionnaire_clean_', tolower(month.name[month(today())]), "_",year(today()),".csv")
+file_name <- paste0(tolower(country_name), '_mm_questionnaire_clean_', tolower(month.name[month(max(df_wrangle$today))]), "_",year(max(df_wrangle$today)),".csv")
 
 write_csv(df_wrangle, paste0('./data-wrangle/', file_name))
 
@@ -108,7 +119,7 @@ dataset_id <- gsub("(.*dataset/)(.*)(/resource.*)", "\\2",raw_data_ridl)
 m <- resource_metadata(
   type = "data",
   url = file_name,
-  name = paste0(country_name, ": Mixed movement - Cleaned", " - ",month.name[month(today())], " ",year(today())),
+  name = paste0(country_name, ": Mixed movement - Cleaned", " - ",month.name[month(max(df_wrangle$today))], " ",year(max(df_wrangle$today))),
   upload = httr::upload_file(paste0('data-wrangle/', file_name)),
   format = "csv",
   file_type = "microdata",
@@ -121,8 +132,6 @@ m <- resource_metadata(
 )
 
 
-r <- resource_create(package_id = dataset_id,
-                     res_metadata = m)
-
-r
+r <- resource_upload(dataset_id,
+                     m)
 
