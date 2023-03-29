@@ -1,7 +1,8 @@
-library(tidyverse)
-library(riddle)
-library(janitor)
-library(rstudioapi)
+if (!require(tidyverse)) install.packages("tidyverse")
+if (!require(janitor)) install.packages("janitor")
+if (!require(rstudioapi)) install.packages("rstudioapi")
+if (!require(pak)) install.packages("pak")
+if (!require(riddle)) pak::pkg_install("edouard-legoupil/riddle")
 
 
 Sys.unsetenv("USE_UAT")
