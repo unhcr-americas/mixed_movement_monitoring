@@ -1,6 +1,7 @@
 if (!require(tidyverse)) install.packages("tidyverse")
 if (!require(janitor)) install.packages("janitor")
 if (!require(rstudioapi)) install.packages("rstudioapi")
+if (!require(devtools)) install.packages("devtools")
 if (!require(pak)) install.packages("pak")
 if (!require(riddle)) pak::pkg_install("edouard-legoupil/riddle")
 
@@ -11,13 +12,10 @@ Sys.unsetenv("USE_UAT")
 rstudioapi::showDialog(title = "Set the parameters for ridl resource!",
                        message = "You will now enter   <b>country_name</b> and the precise URL for the csv datain RIDL  <b>raw_data_ridl</b>" )
 
-#country_name <- rstudioapi::askForPassword(prompt = 'country_name ')
 country_name <- rstudioapi::showPrompt(  title = "country_name", message = "Enter Country name", default = "")
-# country_name <- "Country"
 
-#raw_data_ridl <- rstudioapi::askForPassword(prompt = 'raw_data_ridl')
 raw_data_ridl <- rstudioapi::showPrompt(  title = "raw_data_ridl", message = "Enter precise URL for the csv datain RIDL", default = "")
-#raw_data_ridl <- 'URL to your CSV file in RIDL'   
+
  
 
 # read data ---------------------------------------------------------------
@@ -120,7 +118,7 @@ dataset_id <- gsub("(.*dataset/)(.*)(/resource.*)", "\\2",raw_data_ridl)
 m <- resource_metadata(
   type = "data",
   url = file_name,
-  name = paste0(country_name, ": Mixed movement - Cleaned", " - ",month.name[month(max(df_wrangle$today))], " ",year(max(df_wrangle$today))),
+  name = paste0(country_name, ": Mixed movement - Cleaned"),
   upload = httr::upload_file(paste0('data-wrangle/', file_name)),
   format = "csv",
   file_type = "microdata",
