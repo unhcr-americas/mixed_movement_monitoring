@@ -32,6 +32,7 @@ df_wrangle <- df_raw |>
   select(start,                                                                                                           
          end,                                                                                                             
          today,
+         id = id,
          uuid = uuid,
          gps_ubicacion = ubicacion_gps,                                                                                                 
          gps_latitude = a_introduction_ubicacion_gps_latitude,                                                                            
@@ -80,10 +81,27 @@ df_wrangle <- df_raw |>
          )
   
 
+# remove duplicated uuid --------------------------------------------------
+## keep most recent
+
+
+
+
+
 # keep consent equal yes --------------------------------------------------
 
 df_wrangle <- df_wrangle |> 
   filter(A006_consent == "yes")
+
+
+# remove line break -------------------------------------------------------
+
+df_wrangle <- df_wrangle |> 
+  mutate(across(
+    where(is.character),
+    str_trim
+  ))
+
 
 
 # remove unnecessary rows -------------------------------------------------
